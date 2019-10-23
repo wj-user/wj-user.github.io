@@ -79,15 +79,15 @@
 
 
 
-<meta name="description" content="netty 权威指南 走近 java NIO   Netty NIO入门 Net同意编解码开发指南 中级 Netty 多协议开发和应用    Linux I&#x2F;O模型简介fd:file descriptor, 文件描述符   阻塞IO模型调用recvfrom,系统调用直到数据包到达且被复制到应用缓冲区中或发生错误时才返回,在此期间一直等待 非阻塞IO模型">
+<meta name="description" content="netty 权威指南 走近 java NIO   Netty NIO入门 Net同意编解码开发指南 中级 Netty 多协议开发和应用    Linux I&#x2F;O模型简介fd:file descriptor, 文件描述符关键是用户态和内核态的转换? 阻塞IO模型调用recvfrom,系统调用直到数据包到达且被复制到应用缓冲区中或发生错误时才返回,在此期间一直等待(阻塞). 非阻塞IO模型系统调用之后">
 <meta name="keywords" content="netty">
 <meta property="og:type" content="article">
 <meta property="og:title" content="netty-1">
 <meta property="og:url" content="http:&#x2F;&#x2F;yoursite.com&#x2F;2019&#x2F;10&#x2F;23&#x2F;netty-1&#x2F;index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="netty 权威指南 走近 java NIO   Netty NIO入门 Net同意编解码开发指南 中级 Netty 多协议开发和应用    Linux I&#x2F;O模型简介fd:file descriptor, 文件描述符   阻塞IO模型调用recvfrom,系统调用直到数据包到达且被复制到应用缓冲区中或发生错误时才返回,在此期间一直等待 非阻塞IO模型">
+<meta property="og:description" content="netty 权威指南 走近 java NIO   Netty NIO入门 Net同意编解码开发指南 中级 Netty 多协议开发和应用    Linux I&#x2F;O模型简介fd:file descriptor, 文件描述符关键是用户态和内核态的转换? 阻塞IO模型调用recvfrom,系统调用直到数据包到达且被复制到应用缓冲区中或发生错误时才返回,在此期间一直等待(阻塞). 非阻塞IO模型系统调用之后">
 <meta property="og:locale" content="en">
-<meta property="og:updated_time" content="2019-10-23T08:28:31.669Z">
+<meta property="og:updated_time" content="2019-10-23T09:39:51.153Z">
 <meta name="twitter:card" content="summary">
 
 
@@ -346,9 +346,20 @@
 <li>Net同意编解码开发指南 中级</li>
 <li>Netty 多协议开发和应用  </li>
 </ul>
-<h2 id="Linux-I-O模型简介"><a href="#Linux-I-O模型简介" class="headerlink" title="Linux I/O模型简介"></a>Linux I/O模型简介</h2><p>fd:file descriptor, 文件描述符  </p>
-<h3 id="阻塞IO模型"><a href="#阻塞IO模型" class="headerlink" title="阻塞IO模型"></a>阻塞IO模型</h3><p>调用recvfrom,系统调用直到数据包到达且被复制到应用缓冲区中或发生错误时才返回,在此期间一直等待</p>
-<h3 id="非阻塞IO模型"><a href="#非阻塞IO模型" class="headerlink" title="非阻塞IO模型"></a>非阻塞IO模型</h3>
+<h2 id="Linux-I-O模型简介"><a href="#Linux-I-O模型简介" class="headerlink" title="Linux I/O模型简介"></a>Linux I/O模型简介</h2><p>fd:file descriptor, 文件描述符<br><strong><em>关键是用户态和内核态的转换?</em></strong></p>
+<h3 id="阻塞IO模型"><a href="#阻塞IO模型" class="headerlink" title="阻塞IO模型"></a>阻塞IO模型</h3><p>调用recvfrom,系统调用直到数据包到达且被复制到应用缓冲区中或发生错误时才返回,在此期间一直等待(阻塞).</p>
+<h3 id="非阻塞IO模型"><a href="#非阻塞IO模型" class="headerlink" title="非阻塞IO模型"></a>非阻塞IO模型</h3><p>系统调用之后,立刻返回EWOULDBLOCK错误.轮询内核是否准备好</p>
+<h3 id="IO复用模型"><a href="#IO复用模型" class="headerlink" title="IO复用模型"></a>IO复用模型</h3><p>fd, select,poll, <strong><em>epoll</em></strong>.<br>进程受阻于select调用,等待多个套接口(socket)变为可读.<br>FD_SETSIZE默认1024.<br>select/poll每次线性扫描,导致非活跃socket也浪费时间,而epoll只扫描活跃socket操作.<br>epoll上限: 操作系统最大文件句柄数,如1G内存的机器,10万个句柄左右.</p>
+<h3 id="信号驱动IO模型"><a href="#信号驱动IO模型" class="headerlink" title="信号驱动IO模型"></a>信号驱动IO模型</h3><p>进程调用sigaction()函数,调用后进程继续工作(非阻塞). 数据就绪时,函数发送SIGIO信号通知进程数据已就绪,进程调用recvfrom读取数据(实际的IO操作).</p>
+<h3 id="异步IO"><a href="#异步IO" class="headerlink" title="异步IO"></a>异步IO</h3><p>通知内核做某个操作,内核在整个操作完成后(包括将数据从内核复制到自己的缓冲区),通知进程.</p>
+<p>信号驱动IO是由内核同时我们何时可以开始一个IO操作,而异步IO模型是由内核通知我们操作何时已经完成.</p>
+<h2 id="奇怪的知识点"><a href="#奇怪的知识点" class="headerlink" title="奇怪的知识点"></a>奇怪的知识点</h2><p>Socket Serversocket 简单测试<br>inputStream.read()是阻塞的,OutStrea目前java1.8没有指明是block</p>
+<p>SocketChannel,ServerSocketChannel,类似BIO的Socket个ServerSocket</p>
+<p>NIO加上了缓冲区Buffer,NIO库的数据都是用缓冲区处理的,       <strong><em>缓冲区和内存是什么关系?</em></strong></p>
+<p>通道,channel,双向,可以同时读写, SelectableChannel(网络读写)和FileChannel(文件操作)</p>
+<p>多路复用器Selector, 是javaNIO的基础, 选择已就绪的人物,轮询注册在其上的channel, 如果某个channel上面有新的TCP连接接入或者读写事件(处于就绪状态), 可以通过SelectionKey获得就绪的channel的集合</p>
+<p>JvisualVM-&gt;打印线程堆栈</p>
+
       
     </div>
     
@@ -518,7 +529,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#netty-权威指南"><span class="nav-number">1.</span> <span class="nav-text">netty 权威指南</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux-I-O模型简介"><span class="nav-number">1.1.</span> <span class="nav-text">Linux I/O模型简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#阻塞IO模型"><span class="nav-number">1.1.1.</span> <span class="nav-text">阻塞IO模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#非阻塞IO模型"><span class="nav-number">1.1.2.</span> <span class="nav-text">非阻塞IO模型</span></a></li></ol></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#netty-权威指南"><span class="nav-number">1.</span> <span class="nav-text">netty 权威指南</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux-I-O模型简介"><span class="nav-number">1.1.</span> <span class="nav-text">Linux I/O模型简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#阻塞IO模型"><span class="nav-number">1.1.1.</span> <span class="nav-text">阻塞IO模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#非阻塞IO模型"><span class="nav-number">1.1.2.</span> <span class="nav-text">非阻塞IO模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IO复用模型"><span class="nav-number">1.1.3.</span> <span class="nav-text">IO复用模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#信号驱动IO模型"><span class="nav-number">1.1.4.</span> <span class="nav-text">信号驱动IO模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#异步IO"><span class="nav-number">1.1.5.</span> <span class="nav-text">异步IO</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#奇怪的知识点"><span class="nav-number">1.2.</span> <span class="nav-text">奇怪的知识点</span></a></li></ol></li></ol></div>
             
 
           </div>
